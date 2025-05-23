@@ -3,12 +3,20 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "main": "deskApp.cjs",
   "scripts": {
     "dev": "vite --open --port 3000",
     "build": "vite build",
-    "serve": "vite preview --host --open --port 3000"
+    "serve": "vite preview --host --open --port 3000",
+    "start": "react-scripts start",
+    "electron": "electron ./src/deskApp.cjs",
+    "ddev": "concurrently \"vite --port 3000\" \"cross-env NODE_ENV=dev electron ./src/deskApp.cjs\"",
+    "dbuild": "vite build && electron ./src/deskApp.cjs"
   },
   "devDependencies": {
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "electron": "^36.3.1",
     "vite": "^6.3.5"
   }
 }
