@@ -18,5 +18,12 @@
     "cross-env": "^7.0.3",
     "electron": "^36.3.1",
     "vite": "^6.3.5"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^4.5.0",
+    "bootstrap": "^5.3.6",
+    "react": "^19.1.0",
+    "react-bootstrap": "^2.10.10",
+    "react-dom": "^19.1.0"
   }
 }
