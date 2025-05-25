@@ -1,13 +1,41 @@
-import React from 'react';
-import { Button, Form, Container } from 'react-bootstrap';
+import React, { useState, useEffect } from 'react';
+import { Button, Form, Container, Alert } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import '../style.css';
 
 function LoginPage() {
   const navigate = useNavigate();
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const handleLogin = () => {
-    navigate('/main', { state: { username: 'JohnDoe' } });
+  useEffect(() => {
+    const autosuggestContainers = document.querySelectorAll('.react-autosuggest__suggestions-container');
+    autosuggestContainers.forEach(el => el.remove());
+  }, []);
+
+  const handleLogin = async () => {
+    if (!username || !password) {
+      setErrorMessage('Please enter both username and password.');
+      return;
+    }
+
+    const result = await window.db.loginUser({ username, password });
+
+    if (!result.success) {
+      setErrorMessage(result.error);
+      return;
+    }
+
+    const { user } = result;
+    navigate('/main', {
+      state: {
+        username: user.username,
+        location: user.location,
+        lat: user.lat,
+        lon: user.lon
+      }
+    });
   };
 
   const handleRegister = () => {
@@ -26,15 +54,31 @@ function LoginPage() {
       <Form style={{ width: '100%', maxWidth: '400px' }}>
         <Form.Group controlId="username" className="mb-3">
           <Form.Label>Username</Form.Label>
-          <Form.Control type="text" placeholder="Enter username" />
+          <Form.Control
+            type="text"
+            placeholder="Enter username"
+            value={username}
+            onChange={e => setUsername(e.target.value)}
+          />
         </Form.Group>
 
         <Form.Group controlId="password" className="mb-4">
           <Form.Label>Password</Form.Label>
-          <Form.Control type="password" placeholder="Enter password" />
+          <Form.Control
+            type="password"
+            placeholder="Enter password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+          />
         </Form.Group>
 
-        <div className="d-grid gap-2 mb-2">
+        {errorMessage && (
+          <Alert variant="danger" className="mt-2">
+            {errorMessage}
+          </Alert>
+        )}
+
+        <div className="d-grid gap-2 mt-3">
           <Button variant="primary" onClick={handleLogin}>Sign In</Button>
           <Button variant="secondary" onClick={handleRegister}>Register</Button>
         </div>

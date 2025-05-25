@@ -144,3 +144,8 @@ button:focus-visible {
 body {
   background-color: #487fb6;
 }
+
+.react-autosuggest__suggestions-container {
+  pointer-events: auto !important;
+  z-index: 1000;
+}

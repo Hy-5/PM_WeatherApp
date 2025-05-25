@@ -6,6 +6,7 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import localImgHolder from '../assets/placeholder.webp';
+import { useLocation } from 'react-router-dom';
 import rain from '../assets/rain.webp';
 import snow from '../assets/snow.webp';
 import sun from '../assets/sun.webp';
@@ -21,6 +22,9 @@ function MainApp() {
   const [weatherData, setWeatherData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const location = useLocation();
+  const lat = location.state?.lat ?? 29.7604;
+  const lon = location.state?.lon ?? -95.3698;
   const [currentLocation, setCurrentLocation] = useState({ lat: 29.7604, lon: -95.3698, name: 'Houston, TX' });
 
   // OBFUSCATE LATER
@@ -77,7 +81,7 @@ function MainApp() {
     }
   };
 
-  // Process One Call API data into 5-day forecast
+  // Process One Call API (3.0) data into 5-day forecast
   const processWeatherData = (data) => {
     const dailyForecasts = [];
     
@@ -140,8 +144,15 @@ function MainApp() {
 
   // Fetch weather data on component mount
   useEffect(() => {
-    getUserLocation();
-  }, []);
+    if (location.state?.lat && location.state?.lon && location.state?.location) {
+      const { lat, lon, location: name } = location.state;
+      setCurrentLocation({ lat, lon, name });
+      fetchWeatherData(lat, lon);
+    } else {
+      getUserLocation();
+    }
+    }, []);
+
 
   // Autosuggest handlers
   const onSuggestionsFetchRequested = ({ value }) => {
