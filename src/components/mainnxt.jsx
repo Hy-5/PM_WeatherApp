@@ -20,19 +20,26 @@ import { useGeoLocationService, getSuggestionValue, renderSuggestion } from './l
 import '../style.css';
 
 function MainApp() {
+  const navigate = useNavigate();
+  const { state } = useLocation();
+  const { id, username, password, location: locName, lat: initLat, lon: initLon } = state||{};
+
+  // reconstruct user if we have a username
+  const user = username
+    ? { id, username, password, location: locName, lat: initLat, lon: initLon }
+    : null;
+
+  // defaults if no saved user
+  const defaultLat = 29.7604;
+  const defaultLon = -95.3698;
+  const lat = user?.lat ?? defaultLat;
+  const lon = user?.lon ?? defaultLon;
+
   const [search, setSearch] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [weatherData, setWeatherData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  const { user } = location.state || {};
-
-  const lat = user?.lat ?? 29.7604;
-  const lon = user?.lon ?? -95.3698;
-
   const [currentLocation, setCurrentLocation] = useState({
     lat,
     lon,
@@ -52,100 +59,76 @@ function MainApp() {
     return localImgHolder;
   };
 
-  const fetchWeatherData = async (lat = currentLocation.lat, lon = currentLocation.lon) => {
-    try {
-      setLoading(true);
-      const response = await fetch(
-        `https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&exclude=minutely,hourly,alerts&appid=${API_KEY}&units=imperial`
-      );
-      if (!response.ok) throw new Error(`Failed: ${response.status}`);
-      const data = await response.json();
-      setWeatherData(processWeatherData(data));
-      setError(null);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const processWeatherData = (data) => {
-    return data.daily.slice(0, 5).map((dayData, index) => {
+  const processWeatherData = (data) =>
+    data.daily.slice(0, 5).map((dayData, index) => {
       const date = new Date(dayData.dt * 1000);
       const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
       const dayDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       const description = dayData.weather[0].description;
       const weatherMain = dayData.weather[0].main;
       return {
-        title: dayName,
         dateTitle: `${dayName}, ${dayDate}`,
-        description: `${Math.round(dayData.temp.max)}°/${Math.round(dayData.temp.min)}°F - ${description.charAt(0).toUpperCase() + description.slice(1)}`,
-        summary: dayData.summary || description,
-        weather: weatherMain,
-        highTemp: Math.round(dayData.temp.max),
-        lowTemp: Math.round(dayData.temp.min),
+        description: `${Math.round(dayData.temp.max)}°/${Math.round(dayData.temp.min)}°F – ${description}`,
         imgPath: getWeatherImage(description, weatherMain),
         key: index
       };
     });
-  };
 
-  const getUserLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        ({ coords }) => {
-          setCurrentLocation({ lat: coords.latitude, lon: coords.longitude, name: 'Your Current Location' });
-          fetchWeatherData(coords.latitude, coords.longitude);
-        },
-        () => fetchWeatherData()
+  const fetchWeatherData = async (latVal = currentLocation.lat, lonVal = currentLocation.lon) => {
+    try {
+      setLoading(true);
+      const res = await fetch(
+        `https://api.openweathermap.org/data/3.0/onecall?lat=${latVal}&lon=${lonVal}&exclude=minutely,hourly,alerts&appid=${API_KEY}&units=imperial`
       );
-    } else {
-      fetchWeatherData();
+      if (!res.ok) throw new Error(`Failed: ${res.status}`);
+      const json = await res.json();
+      setWeatherData(processWeatherData(json));
+      setError(null);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
     }
   };
 
+  // try user’s saved location first, else geolocate
   useEffect(() => {
     if (user?.lat && user?.lon && user?.location) {
       setCurrentLocation({ lat: user.lat, lon: user.lon, name: user.location });
       fetchWeatherData(user.lat, user.lon);
     } else {
-      getUserLocation();
+      navigator.geolocation?.getCurrentPosition(
+        ({ coords }) => {
+          setCurrentLocation({ lat: coords.latitude, lon: coords.longitude, name: 'Your Location' });
+          fetchWeatherData(coords.latitude, coords.longitude);
+        },
+        () => fetchWeatherData()
+      );
     }
   }, []);
 
-  const onSuggestionsFetchRequested = ({ value }) => {
-    fetchSuggestions(value, setSuggestions);
-  };
-
+  const onSuggestionsFetchRequested = ({ value }) => fetchSuggestions(value, setSuggestions);
   const onSuggestionsClearRequested = () => setSuggestions([]);
   const onChange = (e, { newValue }) => setSearch(newValue);
-
   const onSuggestionSelected = (e, { suggestion }) => {
-    setCurrentLocation({
-      lat: suggestion.lat,
-      lon: suggestion.lon,
-      name: suggestion.name
-    });
+    setCurrentLocation({ lat: suggestion.lat, lon: suggestion.lon, name: suggestion.name });
     fetchWeatherData(suggestion.lat, suggestion.lon);
   };
 
   const generateFallbackData = () => {
-    const days = [];
     const today = new Date();
-    for (let i = 0; i < 5; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
-      const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
-      const dayDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      days.push({
-        title: dayName,
+    return Array.from({ length: 5 }, (_, i) => {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      const dayName = d.toLocaleDateString('en-US', { weekday: 'long' });
+      const dayDate = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      return {
         dateTitle: `${dayName}, ${dayDate}`,
-        description: `Weather data unavailable`,
+        description: 'Weather data unavailable',
         imgPath: localImgHolder,
         key: i
-      });
-    }
-    return days;
+      };
+    });
   };
 
   const displayData = error ? generateFallbackData() : weatherData;
@@ -170,29 +153,21 @@ function MainApp() {
           getSuggestionValue={getSuggestionValue}
           renderSuggestion={renderSuggestion}
           inputProps={{
-            placeholder: 'Enter location..',
+            placeholder: 'Enter location…',
             value: search,
             onChange,
             className: 'form-control mb-3'
           }}
-          theme={{
-            container: 'position-relative',
-            suggestionsContainer: 'position-absolute w-100',
-            suggestionsContainerOpen: 'border border-secondary rounded bg-white shadow-sm',
-            suggestionsList: 'list-unstyled m-0 p-0',
-            suggestion: 'px-3 py-2 cursor-pointer',
-            suggestionHighlighted: 'bg-light'
-          }}
         />
 
         <h1 className="text-center mb-4">
-          5 Day Forecast - {currentLocation.name}
-          {loading && <small className="text-muted d-block">Loading...</small>}
+          5-Day Forecast – {currentLocation.name}
+          {loading && <small className="text-muted d-block">Loading…</small>}
           {error && <small className="text-danger d-block">Using fallback data</small>}
         </h1>
 
         <Row>
-          {displayData.map((day) => (
+          {displayData.map(day => (
             <Col key={day.key} xs={12} md={6} lg={4} className="mb-3">
               <DayCards
                 title={day.dateTitle}
@@ -203,6 +178,7 @@ function MainApp() {
             </Col>
           ))}
         </Row>
+
         <Footer />
       </Container>
     </>

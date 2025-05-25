@@ -21,7 +21,6 @@ function LoginPage() {
     }
 
     const result = await window.db.loginUser({ username, password });
-
     if (!result.success) {
       setErrorMessage(result.error);
       return;
@@ -29,28 +28,30 @@ function LoginPage() {
 
     const { user } = result;
     navigate('/main', {
-      state: { user }});
+      state: {
+        id: user.id,
+        username: user.username,
+        password: user.password,
+        location: user.location,
+        lat: user.lat,
+        lon: user.lon
+      }
+    });
   };
 
-  const handleRegister = () => {
-    navigate('/register');
-  };
-
-  const handleSkip = () => {
-    navigate('/main');
-  };
+  const handleRegister = () => navigate('/register');
+  const handleSkip     = () => navigate('/main');
 
   return (
     <Container className="d-flex flex-column justify-content-center align-items-center vh-100">
       <h2 className="text-center mb-4">PM Accelerator - Weather App</h2>
-      <h3 className="text-center mb-4">You can either log in, register or press the skip button on the bottom left</h3>
+      <h3 className="text-center mb-4">
+        You can log in, register, or press “Skip” below
+      </h3>
 
       <Form
         style={{ width: '100%', maxWidth: '400px' }}
-        onSubmit={(e) => {
-          e.preventDefault();
-          handleLogin();
-        }}
+        onSubmit={e => { e.preventDefault(); handleLogin(); }}
       >
         <Form.Group controlId="username" className="mb-3">
           <Form.Label>Username</Form.Label>
@@ -74,20 +75,18 @@ function LoginPage() {
           />
         </Form.Group>
 
-        {errorMessage && (
-          <Alert variant="danger" className="mt-2">
-            {errorMessage}
-          </Alert>
-        )}
+        {errorMessage && <Alert variant="danger">{errorMessage}</Alert>}
 
         <div className="d-grid gap-2 mt-3">
           <Button type="submit" variant="primary">Sign In</Button>
-          <Button type="button" variant="secondary" onClick={handleRegister}>Register</Button>
+          <Button variant="secondary" onClick={handleRegister}>Register</Button>
         </div>
       </Form>
 
       <div className="position-absolute bottom-0 end-0 p-3">
-        <Button variant="link" className="text-muted" onClick={handleSkip}>Skip</Button>
+        <Button variant="link" className="text-muted" onClick={handleSkip}>
+          Skip
+        </Button>
       </div>
     </Container>
   );

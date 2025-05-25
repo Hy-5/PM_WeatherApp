@@ -2,31 +2,49 @@ import React, { useState } from 'react';
 import { Container, Card, Button, Form, Alert } from 'react-bootstrap';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Autosuggest from 'react-autosuggest';
-import { useGeoLocationService, getSuggestionValue, renderSuggestion } from './locPull';
+import {
+  useGeoLocationService,
+  getSuggestionValue,
+  renderSuggestion
+} from './locPull';
 
 function UserProfile() {
-  const location = useLocation();
   const navigate = useNavigate();
-  const { user } = location.state || {};
-  
-  const [username, setUsername] = useState(user?.username || '');
-  const [password, setPassword] = useState(user?.password || '');
-  const [userLocation, setUserLocation] = useState(user?.location || '');
-  const [locationSuggestions, setLocationSuggestions] = useState([]);
-  const [selectedLocationData, setSelectedLocationData] = useState(null);
-  const [message, setMessage] = useState('');
-  const [messageType, setMessageType] = useState('');
-  
-  const { getSuggestions } = useGeoLocationService('9a237f649b55a4f5183dd716c1fa7d1c');
-  
-  if (!user) {
+  const { state } = useLocation();
+  const {
+    id,
+    username: initialUsername,
+    password: initialPassword,
+    location: initialLocationName,
+    lat: initialLat,
+    lon: initialLon
+  } = state || {};
+
+  // redirect if no user data
+  if (!id) {
     return (
       <Container className="mt-5 text-center">
         <h3>No user data found.</h3>
-        <Button variant="secondary" onClick={() => navigate('/main')}>Back to Main</Button>
+        <Button variant="secondary" onClick={() => navigate('/main')}>
+          Back to Main
+        </Button>
       </Container>
     );
   }
+
+  const [username, setUsername] = useState(initialUsername || '');
+  const [password, setPassword] = useState(initialPassword || '');
+  const [userLocation, setUserLocation] = useState(initialLocationName || '');
+  const [locationSuggestions, setLocationSuggestions] = useState([]);
+  const [selectedLocationData, setSelectedLocationData] = useState(
+    initialLat != null && initialLon != null
+      ? { lat: initialLat, lon: initialLon }
+      : null
+  );
+  const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState('');
+
+  const { getSuggestions } = useGeoLocationService('9a237f649b55a4f5183dd716c1fa7d1c');
 
   const handleUpdate = async () => {
     if (!username || !password || !userLocation) {
@@ -35,55 +53,51 @@ function UserProfile() {
       return;
     }
 
+    // compose update payload
     const updateData = {
-      id: user.id,
+      id,
       username,
       password,
-      location: userLocation
+      location: userLocation,
+      lat: selectedLocationData?.lat ?? initialLat,
+      lon: selectedLocationData?.lon ?? initialLon
     };
 
-    // Add lat/lon if location was selected from suggestions
-    if (selectedLocationData) {
-      updateData.lat = selectedLocationData.lat;
-      updateData.lon = selectedLocationData.lon;
-    }
-
-    const result = await window.db.updateUser({ 
-        id: user.id, 
-        username, 
-        password, 
-        location: userLocation,
-        lat: selectedLocationData?.lat,
-        lon: selectedLocationData?.lon
-    });
-
+    const result = await window.db.updateUser(updateData);
 
     if (result.success) {
+        const newState = {
+            id,
+            username,
+            password,
+            location: userLocation,
+            lat: updateData.lat,
+            lon: updateData.lon
+        };
+
       setMessage('Profile updated successfully!');
       setMessageType('success');
+
+      // update state when going back
+      navigate('/main', { state: newState });
     } else {
       setMessage(result.error || 'Update failed.');
       setMessageType('danger');
     }
   };
 
-  const onLocationSuggestionsFetchRequested = ({ value }) => {
+  const onLocationSuggestionsFetchRequested = ({ value }) =>
     getSuggestions(value, setLocationSuggestions);
-  };
 
-  const onLocationSuggestionsClearRequested = () => {
+  const onLocationSuggestionsClearRequested = () =>
     setLocationSuggestions([]);
-  };
 
-  const onLocationSuggestionSelected = (event, { suggestion }) => {
+  const onLocationSuggestionSelected = (e, { suggestion }) =>
     setSelectedLocationData(suggestion);
-  };
 
-  const onLocationChange = (event, { newValue }) => {
+  const onLocationChange = (e, { newValue }) => {
     setUserLocation(newValue);
-    if (!newValue) {
-      setSelectedLocationData(null);
-    }
+    if (!newValue) setSelectedLocationData(null);
   };
 
   return (
@@ -96,13 +110,13 @@ function UserProfile() {
               {message}
             </Alert>
           )}
-          
+
           <Form.Group className="mb-3">
             <Form.Label><strong>Username:</strong></Form.Label>
             <Form.Control
               type="text"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={e => setUsername(e.target.value)}
               placeholder="Enter username"
             />
           </Form.Group>
@@ -112,7 +126,7 @@ function UserProfile() {
             <Form.Control
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={e => setPassword(e.target.value)}
               placeholder="Enter password"
             />
           </Form.Group>
@@ -137,16 +151,23 @@ function UserProfile() {
 
           <div className="d-grid gap-2">
             <div className="d-flex gap-2">
-              <Button
-                variant="primary"
-                onClick={handleUpdate}
-                className="flex-fill"
-              >
+              <Button variant="primary" onClick={handleUpdate} className="flex-fill">
                 Update
               </Button>
               <Button
                 variant="secondary"
-                onClick={() => navigate('/main', { state: { ...user } })}
+                onClick={() =>
+                navigate('/main', {
+                    state: {
+                        id,
+                        username,
+                        password,
+                        location: userLocation,
+                        lat: selectedLocationData?.lat ?? initialLat,
+                        lon: selectedLocationData?.lon ?? initialLon
+                    }
+                })
+                }
                 className="flex-fill"
               >
                 Back

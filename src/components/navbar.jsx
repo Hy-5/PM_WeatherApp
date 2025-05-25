@@ -1,3 +1,4 @@
+// navbar.jsx
 import React from 'react';
 import { Navbar, Container, Nav } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
@@ -7,7 +8,7 @@ function AppNavbar({ user }) {
 
   const handleProfileClick = () => {
     if (user) {
-      navigate('/profile', { state: { user } });
+      navigate('/profile', { state: { ...user } });
     }
   };
 
