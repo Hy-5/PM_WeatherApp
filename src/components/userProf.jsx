@@ -1,12 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, Card, Button, Form, Alert } from 'react-bootstrap';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Autosuggest from 'react-autosuggest';
-import {
-  useGeoLocationService,
-  getSuggestionValue,
-  renderSuggestion
-} from './locPull';
+import { useGeoLocationService, getSuggestionValue, renderSuggestion } from './locPull';
 
 function UserProfile() {
   const navigate = useNavigate();
@@ -17,7 +13,9 @@ function UserProfile() {
     password: initialPassword,
     location: initialLocationName,
     lat: initialLat,
-    lon: initialLon
+    lon: initialLon,
+    historyDate_range: initialHistoryDateRange,
+    historyLocation: initialHistoryLocation
   } = state || {};
 
   // redirect if no user data
@@ -41,6 +39,8 @@ function UserProfile() {
       ? { lat: initialLat, lon: initialLon }
       : null
   );
+  const [historyDateRange] = useState(initialHistoryDateRange || '');
+  const [historyLocation] = useState(initialHistoryLocation || '');
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('');
 
@@ -53,7 +53,6 @@ function UserProfile() {
       return;
     }
 
-    // compose update payload
     const updateData = {
       id,
       username,
@@ -66,19 +65,19 @@ function UserProfile() {
     const result = await window.db.updateUser(updateData);
 
     if (result.success) {
-        const newState = {
-            id,
-            username,
-            password,
-            location: userLocation,
-            lat: updateData.lat,
-            lon: updateData.lon
-        };
+      const newState = {
+        id,
+        username,
+        password,
+        location: userLocation,
+        lat: updateData.lat,
+        lon: updateData.lon,
+        historyDate_range: historyDateRange,
+        historyLocation
+      };
 
       setMessage('Profile updated successfully!');
       setMessageType('success');
-
-      // update state when going back
       navigate('/main', { state: newState });
     } else {
       setMessage(result.error || 'Update failed.');
@@ -86,15 +85,31 @@ function UserProfile() {
     }
   };
 
+  const handleDownload = async () => {
+    try {
+      const allUsers = await window.db.getAllUsers();
+      const dataStr = JSON.stringify(allUsers, null, 2);
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'users.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setMessage('Download failed.');
+      setMessageType('danger');
+    }
+  };
+
   const onLocationSuggestionsFetchRequested = ({ value }) =>
     getSuggestions(value, setLocationSuggestions);
-
   const onLocationSuggestionsClearRequested = () =>
     setLocationSuggestions([]);
-
   const onLocationSuggestionSelected = (e, { suggestion }) =>
     setSelectedLocationData(suggestion);
-
   const onLocationChange = (e, { newValue }) => {
     setUserLocation(newValue);
     if (!newValue) setSelectedLocationData(null);
@@ -131,7 +146,7 @@ function UserProfile() {
             />
           </Form.Group>
 
-          <Form.Group className="mb-4">
+          <Form.Group className="mb-3">
             <Form.Label><strong>Location:</strong></Form.Label>
             <Autosuggest
               suggestions={locationSuggestions}
@@ -149,24 +164,46 @@ function UserProfile() {
             />
           </Form.Group>
 
+          <Form.Group className="mb-3">
+            <Form.Label><strong>Date Range:</strong></Form.Label>
+            <Form.Control
+              type="text"
+              readOnly
+              value={historyDateRange}
+            />
+          </Form.Group>
+          <Form.Group className="mb-4">
+            <Form.Label><strong>Old Location Search:</strong></Form.Label>
+            <Form.Control
+              type="text"
+              readOnly
+              value={historyLocation}
+            />
+          </Form.Group>
+
           <div className="d-grid gap-2">
             <div className="d-flex gap-2">
               <Button variant="primary" onClick={handleUpdate} className="flex-fill">
                 Update
               </Button>
+              <Button variant="outline-success" onClick={handleDownload} className="flex-fill">
+                Download
+              </Button>
               <Button
                 variant="secondary"
                 onClick={() =>
-                navigate('/main', {
+                  navigate('/main', {
                     state: {
-                        id,
-                        username,
-                        password,
-                        location: userLocation,
-                        lat: selectedLocationData?.lat ?? initialLat,
-                        lon: selectedLocationData?.lon ?? initialLon
+                      id,
+                      username,
+                      password,
+                      location: userLocation,
+                      lat: selectedLocationData?.lat ?? initialLat,
+                      lon: selectedLocationData?.lon ?? initialLon,
+                      historyDate_range: historyDateRange,
+                      historyLocation
                     }
-                })
+                  })
                 }
                 className="flex-fill"
               >
