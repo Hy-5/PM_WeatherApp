@@ -3,9 +3,10 @@ const { app } = require('electron');
 const Database = require('better-sqlite3');
 
 // db location
-const dbPath = app.isPackaged 
+const dbPath = app.isPackaged
   ? path.join(process.resourcesPath, 'users.db')
   : path.join(__dirname, 'users.db');
+
 const db = new Database(dbPath);
 
 // Create table | consider alter
@@ -20,7 +21,6 @@ db.prepare(`
   )
 `).run();
 
-
 // Registration and data to save
 function registerUser(username, password, location, lat, lon) {
   try {
@@ -32,7 +32,6 @@ function registerUser(username, password, location, lat, lon) {
   }
 }
 
-
 // Login if creds are valid
 function loginUser(username, password) {
   const stmt = db.prepare('SELECT * FROM users WHERE username = ? AND password = ?');
@@ -42,5 +41,27 @@ function loginUser(username, password) {
     : { success: false, error: 'Invalid credentials' };
 }
 
+// Update user profile
+function updateUser({ id, username, password, location, lat, lon }) {
+  try {
+    let stmt, result;
+    
+    if (lat !== undefined && lon !== undefined) {
+      stmt = db.prepare('UPDATE users SET username = ?, password = ?, location = ?, lat = ?, lon = ? WHERE id = ?');
+      result = stmt.run(username, password, location, lat, lon, id);
+    } else {
+      stmt = db.prepare('UPDATE users SET username = ?, password = ?, location = ? WHERE id = ?');
+      result = stmt.run(username, password, location, id);
+    }
+    
+    if (result.changes === 0) {
+      return { success: false, error: 'User not found or no changes made' };
+    }
+    
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
 
-module.exports = { registerUser, loginUser };
+module.exports = { registerUser, loginUser, updateUser };

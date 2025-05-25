@@ -28,13 +28,7 @@ function MainApp() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const user = location.state?.username ? {
-    username: location.state.username,
-    password: location.state.password,
-    location: location.state.location,
-    lat: location.state.lat,
-    lon: location.state.lon
-  } : null;
+  const { user } = location.state || {};
 
   const lat = user?.lat ?? 29.7604;
   const lon = user?.lon ?? -95.3698;

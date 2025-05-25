@@ -1,7 +1,7 @@
 const { ipcMain, app, BrowserWindow } = require('electron');
 const path = require('path');
 const url = require('url');
-const { registerUser, loginUser } = require('./db/sqlite.js');
+const { registerUser, loginUser, updateUser } = require('./db/sqlite.js');
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -13,7 +13,6 @@ function createWindow() {
       nodeIntegration: false
     }
   });
-
   const isDev = process.env.NODE_ENV === 'dev';
   win.loadURL(isDev
     ? 'http://localhost:3000'
@@ -38,4 +37,8 @@ ipcMain.handle('register-user', (event, { username, password, location, lat, lon
 
 ipcMain.handle('login-user', (event, { username, password }) => {
   return loginUser(username, password);
+});
+
+ipcMain.handle('update-user', (event, userData) => {
+  return updateUser(userData);
 });

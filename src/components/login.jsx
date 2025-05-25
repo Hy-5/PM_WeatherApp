@@ -29,13 +29,7 @@ function LoginPage() {
 
     const { user } = result;
     navigate('/main', {
-      state: {
-        username: user.username,
-        location: user.location,
-        lat: user.lat,
-        lon: user.lon
-      }
-    });
+      state: { user }});
   };
 
   const handleRegister = () => {
