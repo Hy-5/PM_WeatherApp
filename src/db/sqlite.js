@@ -9,7 +9,7 @@ const dbPath = app.isPackaged
 
 const db = new Database(dbPath);
 
-// Create table | consider alter
+// Create table with new history columns
 db.prepare(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -17,22 +17,37 @@ db.prepare(`
     password TEXT,
     location TEXT,
     lat REAL,
-    lon REAL
+    lon REAL,
+    historyDate_range TEXT,
+    historyLocation TEXT
   )
 `).run();
 
-// Registration and data to save
+// For existing DBs: add columns if they don't exist
+try {
+  db.prepare(`ALTER TABLE users ADD COLUMN historyDate_range TEXT`).run();
+} catch (e) {
+  // Column already exists
+}
+try {
+  db.prepare(`ALTER TABLE users ADD COLUMN historyLocation TEXT`).run();
+} catch (e) {
+  // Column already exists
+}
+
+// Registration (unchanged)
 function registerUser(username, password, location, lat, lon) {
   try {
-    db.prepare('INSERT INTO users (username, password, location, lat, lon) VALUES (?, ?, ?, ?, ?)')
-      .run(username, password, location, lat, lon);
+    db.prepare(
+      'INSERT INTO users (username, password, location, lat, lon) VALUES (?, ?, ?, ?, ?)'
+    ).run(username, password, location, lat, lon);
     return { success: true };
   } catch (err) {
     return { success: false, error: err.message };
   }
 }
 
-// Login if creds are valid
+// Login (unchanged)
 function loginUser(username, password) {
   const stmt = db.prepare('SELECT * FROM users WHERE username = ? AND password = ?');
   const user = stmt.get(username, password);
@@ -41,23 +56,33 @@ function loginUser(username, password) {
     : { success: false, error: 'Invalid credentials' };
 }
 
-// Update user profile
-function updateUser({ id, username, password, location, lat, lon }) {
+// Update user profile, now handling history fields
+function updateUser({ id, username, password, location, lat, lon, historyDate_range, historyLocation }) {
   try {
-    let stmt, result;
-    
+    const assignments = ['username = ?', 'password = ?', 'location = ?'];
+    const params = [username, password, location];
+
     if (lat !== undefined && lon !== undefined) {
-      stmt = db.prepare('UPDATE users SET username = ?, password = ?, location = ?, lat = ?, lon = ? WHERE id = ?');
-      result = stmt.run(username, password, location, lat, lon, id);
-    } else {
-      stmt = db.prepare('UPDATE users SET username = ?, password = ?, location = ? WHERE id = ?');
-      result = stmt.run(username, password, location, id);
+      assignments.push('lat = ?', 'lon = ?');
+      params.push(lat, lon);
     }
-    
+    if (historyDate_range !== undefined) {
+      assignments.push('historyDate_range = ?');
+      params.push(historyDate_range);
+    }
+    if (historyLocation !== undefined) {
+      assignments.push('historyLocation = ?');
+      params.push(historyLocation);
+    }
+
+    const sql = `UPDATE users SET ${assignments.join(', ')} WHERE id = ?`;
+    params.push(id);
+    const stmt = db.prepare(sql);
+    const result = stmt.run(...params);
+
     if (result.changes === 0) {
       return { success: false, error: 'User not found or no changes made' };
     }
-    
     return { success: true };
   } catch (err) {
     return { success: false, error: err.message };

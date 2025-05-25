@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import Autosuggest from 'react-autosuggest';
+import { DateRange } from 'react-date-range';
+import 'react-date-range/dist/styles.css';
+import 'react-date-range/dist/theme/default.css';
 import DayCards from './dayCard.jsx';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
@@ -13,7 +16,7 @@ import sun from '../assets/sun.webp';
 import cloud from '../assets/cloud.webp';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Footer from './footer.jsx';
-import { Button } from 'react-bootstrap';
+import { Button, Form } from 'react-bootstrap';
 import { ArrowLeft } from 'react-bootstrap-icons';
 import AppNavbar from './navbar.jsx';
 import { useGeoLocationService, getSuggestionValue, renderSuggestion } from './locPull.jsx';
@@ -22,14 +25,12 @@ import '../style.css';
 function MainApp() {
   const navigate = useNavigate();
   const { state } = useLocation();
-  const { id, username, password, location: locName, lat: initLat, lon: initLon } = state||{};
+  const { id, username, password, location: locName, lat: initLat, lon: initLon } = state || {};
 
-  // reconstruct user if we have a username
   const user = username
     ? { id, username, password, location: locName, lat: initLat, lon: initLon }
     : null;
 
-  // defaults if no saved user
   const defaultLat = 29.7604;
   const defaultLon = -95.3698;
   const lat = user?.lat ?? defaultLat;
@@ -40,14 +41,34 @@ function MainApp() {
   const [weatherData, setWeatherData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [currentLocation, setCurrentLocation] = useState({
-    lat,
-    lon,
-    name: user?.location ?? 'Houston, TX'
-  });
+  const [currentLocation, setCurrentLocation] = useState({ lat, lon, name: user?.location ?? 'Houston, TX' });
+
+  // Default date range: today to next 4 days
+  const today = new Date();
+  const defaultEnd = new Date();
+  defaultEnd.setDate(today.getDate() + 4);
+  const [dateRange, setDateRange] = useState([
+    { startDate: today, endDate: defaultEnd, key: 'selection' }
+  ]);
+  const [showCalendar, setShowCalendar] = useState(false);
 
   const API_KEY = '9a237f649b55a4f5183dd716c1fa7d1c';
   const { getSuggestions: fetchSuggestions } = useGeoLocationService(API_KEY);
+
+  // Handle date selection: only mirror end when user explicitly selects end
+  const handleDateChange = ({ selection }) => {
+    let { startDate: newStart, endDate: newEnd } = selection;
+    // if only click (start == end), keep previous end
+    if (newEnd.getTime() === newStart.getTime()) {
+      newEnd = dateRange[0].endDate;
+    }
+    // ensure startDate <= endDate
+    if (newStart > newEnd) {
+      [newStart, newEnd] = [newEnd, newStart];
+    }
+    setDateRange([{ startDate: newStart, endDate: newEnd, key: 'selection' }]);
+    setShowCalendar(false);
+  };
 
   const getWeatherImage = (description, weatherMain) => {
     const desc = description.toLowerCase();
@@ -159,6 +180,33 @@ function MainApp() {
             className: 'form-control mb-3'
           }}
         />
+
+        {/* Date range picker trigger */}
+        <Form.Group className="mb-3 d-flex gap-3">
+          <Form.Label className="mb-0"><strong>Start Date:</strong></Form.Label>
+          <Form.Control
+            readOnly
+            value={dateRange[0].startDate.toLocaleDateString()}
+            onClick={() => setShowCalendar(prev => !prev)}
+            style={{ cursor: 'pointer', width: 'auto' }}
+          />
+          <Form.Label className="mb-0"><strong>End Date:</strong></Form.Label>
+          <Form.Control
+            readOnly
+            value={dateRange[0].endDate.toLocaleDateString()}
+            onClick={() => setShowCalendar(prev => !prev)}
+            style={{ cursor: 'pointer', width: 'auto' }}
+          />
+        </Form.Group>
+        {showCalendar && (
+          <DateRange
+            ranges={dateRange}
+            onChange={handleDateChange}
+            moveRangeOnFirstSelection={false}
+            months={1}
+            direction="horizontal"
+          />
+        )}
 
         <h1 className="text-center mb-4">
           5-Day Forecast – {currentLocation.name}
