@@ -10,8 +10,8 @@ function LoginPage() {
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
-    const autosuggestContainers = document.querySelectorAll('.react-autosuggest__suggestions-container');
-    autosuggestContainers.forEach(el => el.remove());
+    document.querySelectorAll('.react-autosuggest__suggestions-container')
+      .forEach(el => el.remove());
   }, []);
 
   const handleLogin = async () => {
@@ -51,7 +51,13 @@ function LoginPage() {
       <h2 className="text-center mb-4">PM Accelerator - Weather App</h2>
       <h3 className="text-center mb-4">You can either log in, register or press the skip button on the bottom left</h3>
 
-      <Form style={{ width: '100%', maxWidth: '400px' }}>
+      <Form
+        style={{ width: '100%', maxWidth: '400px' }}
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleLogin();
+        }}
+      >
         <Form.Group controlId="username" className="mb-3">
           <Form.Label>Username</Form.Label>
           <Form.Control
@@ -59,6 +65,7 @@ function LoginPage() {
             placeholder="Enter username"
             value={username}
             onChange={e => setUsername(e.target.value)}
+            autoComplete="username"
           />
         </Form.Group>
 
@@ -69,6 +76,7 @@ function LoginPage() {
             placeholder="Enter password"
             value={password}
             onChange={e => setPassword(e.target.value)}
+            autoComplete="current-password"
           />
         </Form.Group>
 
@@ -79,8 +87,8 @@ function LoginPage() {
         )}
 
         <div className="d-grid gap-2 mt-3">
-          <Button variant="primary" onClick={handleLogin}>Sign In</Button>
-          <Button variant="secondary" onClick={handleRegister}>Register</Button>
+          <Button type="submit" variant="primary">Sign In</Button>
+          <Button type="button" variant="secondary" onClick={handleRegister}>Register</Button>
         </div>
       </Form>
 

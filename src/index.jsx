@@ -4,6 +4,7 @@ import { BrowserRouter, HashRouter, Routes, Route } from 'react-router-dom';
 import LoginPage from './components/login.jsx';
 import MainNxt from './components/mainnxt.jsx';
 import Register from './components/register.jsx';
+import UserProfile from './components/userProf.jsx';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 // dynamic router selection depending on environment var
@@ -18,6 +19,7 @@ root.render(
       <Route path="/" element={<LoginPage />} />
       <Route path="/main" element={<MainNxt />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/profile" element={<UserProfile />} />
     </Routes>
   </Router>
 );
