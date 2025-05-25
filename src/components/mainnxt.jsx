@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import Autosuggest from 'react-autosuggest';
-import DayCards from './components/dayCard.jsx';
+import DayCards from './dayCard.jsx';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
-import localImgHolder from './assets/placeholder.webp';
-import rain from './assets/rain.webp';
-import snow from './assets/snow.webp';
-import sun from './assets/sun.webp';
-import cloud from './assets/cloud.webp';
+import localImgHolder from '../assets/placeholder.webp';
+import rain from '../assets/rain.webp';
+import snow from '../assets/snow.webp';
+import sun from '../assets/sun.webp';
+import cloud from '../assets/cloud.webp';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { locationData, getSuggestions, getSuggestionValue, renderSuggestion } from './mockData.jsx';
-import './style.css';
+import Footer from './footer.jsx';
+import { useGeoLocationService, getSuggestionValue, renderSuggestion } from './locPull.jsx';
+import '../style.css';
 
 function MainApp() {
   const [search, setSearch] = useState('');
@@ -20,13 +21,16 @@ function MainApp() {
   const [weatherData, setWeatherData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentLocation, setCurrentLocation] = useState({ lat: 29.7604, lon: -95.3698, name: 'Houston, TX' });
 
   // OBFUSCATE LATER
   const API_KEY = '9a237f649b55a4f5183dd716c1fa7d1c';
-  const HOUSTON_COORDS = { lat: 29.7604, lon: -95.3698 };
 
-  // image selection based on text desc - change to better heuristic inn case of description with dual conditions
-  // also consider split into separate component
+  // Initialize geo location service
+  // Using same source for to avoid separate API calls
+  const { getSuggestions: fetchSuggestions } = useGeoLocationService(API_KEY);
+
+  // cascading image selection based on text desc | COMPLETE if some descs were not considered
   const getWeatherImage = (description, weatherMain) => {
     const desc = description.toLowerCase();
     const main = weatherMain.toLowerCase();
@@ -44,23 +48,20 @@ function MainApp() {
     return localImgHolder;
   };
 
-  // TEMPORARILY HARDCODING HOUSTON coords
-  const fetchWeatherData = async () => {
+  // Pull weather data using coordinates
+  const fetchWeatherData = async (lat = currentLocation.lat, lon = currentLocation.lon) => {
     try {
       setLoading(true);
-      console.log('Fetching weather data...');
-      console.log('API URL:', `https://api.openweathermap.org/data/3.0/onecall?lat=${HOUSTON_COORDS.lat}&lon=${HOUSTON_COORDS.lon}&exclude=minutely,hourly,alerts&appid=${API_KEY}&units=imperial`);
+      console.log('Fetching weather data for:', lat, lon);
       
       const response = await fetch(
-        `https://api.openweathermap.org/data/3.0/onecall?lat=${HOUSTON_COORDS.lat}&lon=${HOUSTON_COORDS.lon}&exclude=minutely,hourly,alerts&appid=${API_KEY}&units=imperial`
+        `https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&exclude=minutely,hourly,alerts&appid=${API_KEY}&units=imperial`
       );
-      
-      console.log('Response status:', response.status);
       
       if (!response.ok) {
         const errorText = await response.text();
         console.error('API Error:', errorText);
-        throw new Error(`Weather data fetch failed: ${response.status} - ${errorText}`);
+        throw new Error(`Weather data pull failed: ${response.status} - ${errorText}`);
       }
       
       const data = await response.json();
@@ -76,11 +77,10 @@ function MainApp() {
     }
   };
 
-  // One Call API for 5 day forecast
+  // Process One Call API data into 5-day forecast
   const processWeatherData = (data) => {
     const dailyForecasts = [];
     
-    // Use daily array from One Call API (first 5 days)
     data.daily.slice(0, 5).forEach((dayData, index) => {
       const date = new Date(dayData.dt * 1000);
       const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
@@ -113,14 +113,41 @@ function MainApp() {
     return dailyForecasts;
   };
 
+  // Get user's current location
+  const getUserLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setCurrentLocation({
+            lat: latitude,
+            lon: longitude,
+            name: 'Your Current Location'
+          });
+          fetchWeatherData(latitude, longitude);
+        },
+        (error) => {
+          console.warn('Geolocation failed:', error);
+          // Fall back to default Houston, TX
+          fetchWeatherData();
+        }
+      );
+    } else {
+      console.warn('Geolocation not supported');
+      fetchWeatherData();
+    }
+  };
+
   // Fetch weather data on component mount
   useEffect(() => {
-    fetchWeatherData();
+    getUserLocation();
   }, []);
 
   // Autosuggest handlers
   const onSuggestionsFetchRequested = ({ value }) => {
-    setSuggestions(getSuggestions(value));
+    fetchSuggestions(value, (locationSuggestions) => {
+      setSuggestions(locationSuggestions);
+    });
   };
 
   const onSuggestionsClearRequested = () => {
@@ -132,10 +159,17 @@ function MainApp() {
   };
 
   const onSuggestionSelected = (event, { suggestion }) => {
-    console.log('Location selected from suggestions:', suggestion);
+    console.log('Location selected:', suggestion);
+    setCurrentLocation({
+      lat: suggestion.lat,
+      lon: suggestion.lon,
+      name: suggestion.name
+    });
+    // Fetch weather for new location
+    fetchWeatherData(suggestion.lat, suggestion.lon);
   };
 
-  // Fallback to mock data if fetch fails
+  // Fallback data generation
   const generateFallbackData = () => {
     const days = [];
     const today = new Date();
@@ -192,8 +226,7 @@ function MainApp() {
       />
       
       <h1 className="text-center mb-4">
-        {/*5 Day Forecast - {locationData[0].name}*/}
-        5 Day Forecast - Houston, TX
+        5 Day Forecast - {currentLocation.name}
         {loading && <small className="text-muted d-block">Loading...</small>}
         {error && <small className="text-danger d-block">Using fallback data</small>}
       </h1>
@@ -205,10 +238,12 @@ function MainApp() {
               title={day.dateTitle}
               description={day.description}
               imgPath={day.imgPath}
+              imgClass="weather-img"
             />
           </Col>
         ))}
       </Row>
+      <Footer />
     </Container>
   );
 }

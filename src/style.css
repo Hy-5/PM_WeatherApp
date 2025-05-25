@@ -94,3 +94,53 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+.footer {
+  background-color: rgba(10, 4, 22, 0);
+  bottom: 0 !important;
+  padding-top: 10px !important;
+}
+.footer-copywright {
+  text-align: left !important;
+}
+.footer-infoButton {
+  text-align: right !important;
+}
+.footer p {
+  text-align: justify !important;
+}
+.footer h1 {
+  font-size: 1em;
+  color: rgb(0, 0, 0) !important;
+  margin-top: 0.5em !important;
+  margin-bottom: 0.5em !important;
+}
+
+.dayCard {
+  padding-top: 50px !important;
+  padding-bottom: 50px !important;
+  padding-left: 25px !important;
+  padding-right: 25px !important;
+  height: auto !important;
+}
+
+.dayCard-view {
+  box-shadow: 0 4px 5px 3px rgba(228, 87, 117, 0.437) !important;
+  border: 1.5px solid rgba(228, 87, 117, 0.337) !important;
+  color: rgb(0, 0, 0) !important;
+  background-color: transparent !important;
+  opacity: 0.9 !important;
+  transition: all 0.4s ease 0s !important;
+  height: 100% !important;
+}
+
+.weather-img {
+  transform: scale(0.8) !important;
+  transform-origin: center;
+  display: block;
+  margin: 0 auto;
+}
+
+body {
+  background-color: #487fb6;
+}

@@ -8,6 +8,7 @@ function dayCards(props) {
       <Card.Img variant="top"
         src={props.imgPath}
         alt="card-img"
+        className={props.imgClass}
         />
       <Card.Body>
         <Card.Title>{props.title}</Card.Title>
