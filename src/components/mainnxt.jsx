@@ -36,7 +36,7 @@ function MainApp() {
   const lat = user?.lat ?? defaultLat;
   const lon = user?.lon ?? defaultLon;
 
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(user?.historyLocation || locName || '');
   const [suggestions, setSuggestions] = useState([]);
   const [weatherData, setWeatherData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -47,9 +47,34 @@ function MainApp() {
   const today = new Date();
   const defaultEnd = new Date();
   defaultEnd.setDate(today.getDate() + 4);
-  const [dateRange, setDateRange] = useState([
-    { startDate: today, endDate: defaultEnd, key: 'selection' }
-  ]);
+  const [dateRange, setDateRange] = useState(() => {
+    if (user?.historyDate_range) {
+      return [{
+      startDate: new Date(user.historyDate_range.start),
+      endDate:   new Date(user.historyDate_range.end),
+      key: 'selection'
+      }];
+    }
+    return [{ startDate: new Date(), endDate: defaultEnd, key: 'selection' }];
+  });
+
+  useEffect(() => {
+    if (!user) return;
+    const payload = {
+      historyDate_range: {
+        start: dateRange[0].startDate.toISOString(),
+        end:   dateRange[0].endDate.toISOString()
+      },
+      historyLocation: search
+    };
+    fetch(`/api/users/${user.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).catch(console.error);
+  }, [user, search, dateRange]);
+
+  const formattedHistoryDateRange = `${dateRange[0].startDate.toLocaleDateString()} – ${dateRange[0].endDate.toLocaleDateString()}`;
   const [showCalendar, setShowCalendar] = useState(false);
 
   const API_KEY = '9a237f649b55a4f5183dd716c1fa7d1c';
@@ -156,7 +181,11 @@ function MainApp() {
 
   return (
     <>
-      <AppNavbar user={user} />
+      <AppNavbar
+        user={user}
+        historyDateRange={formattedHistoryDateRange}
+        historyLocation={search}
+      />
       <Container className="mt-4">
         <Button
           variant="link"
