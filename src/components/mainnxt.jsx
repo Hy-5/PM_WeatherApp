@@ -247,7 +247,7 @@ function MainApp() {
         )}
 
         <h1 className="text-center mb-4">
-          5-Day Forecast – {currentLocation.name}
+          Weather Forecast – {currentLocation.name}
           {loading && <small className="text-muted d-block">Loading…</small>}
           {error && <small className="text-danger d-block">Using fallback data</small>}
         </h1>

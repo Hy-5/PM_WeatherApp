@@ -1,7 +1,9 @@
 {
   "name": "pmweather",
   "private": true,
-  "version": "0.5.0",
+  "version": "1.0.0",
+  "description": "A Windows desktop weather app built with React+Vite and Electron.",
+  "author": "Ismael Coulibaly - Hy-5",
   "main": "src/deskApp.cjs",
   "build": {
     "appId": "com.pmweather.app",
@@ -31,7 +33,7 @@
     "asar": true,
     "win": {
       "target": ["nsis"],
-      "icon": "src/assets/sun.ico"
+      "icon": "src/assets/pm.ico"
     },
     "nsis": {
       "oneClick": false,
@@ -49,7 +51,8 @@
     "dbuild": "vite build && electron .",
     "pack": "npm run build && electron-builder --dir",
     "dist": "npm run build && electron-builder",
-    "postinstall": "electron-builder install-app-deps"
+    "postinstall": "electron-builder install-app-deps",
+    "postpack": "rcedit release/win-unpacked/PM_Weather.exe --set-icon src/assets/pm.ico"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
