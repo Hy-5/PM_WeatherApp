@@ -43,7 +43,7 @@ function MainApp() {
   const [error, setError] = useState(null);
   const [currentLocation, setCurrentLocation] = useState({ lat, lon, name: user?.location ?? 'Houston, TX' });
 
-  // Default date range: today to next 4 days
+  // Default date range - current + next 4 days
   const today = new Date();
   const defaultEnd = new Date();
   defaultEnd.setDate(today.getDate() + 4);
@@ -80,7 +80,7 @@ function MainApp() {
   const API_KEY = '9a237f649b55a4f5183dd716c1fa7d1c';
   const { getSuggestions: fetchSuggestions } = useGeoLocationService(API_KEY);
 
-  // Handle date selection: only mirror end when user explicitly selects end
+  // Handle date selection: to prevent excessive mirroring
   const handleDateChange = ({ selection }) => {
     let { startDate: newStart, endDate: newEnd } = selection;
     if (newStart.getTime() === newEnd.getTime()) {
@@ -102,20 +102,36 @@ function MainApp() {
     return localImgHolder;
   };
 
-  const processWeatherData = (data) =>
-    data.daily.slice(0, 5).map((dayData, index) => {
-      const date = new Date(dayData.dt * 1000);
-      const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
-      const dayDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      const description = dayData.weather[0].description;
-      const weatherMain = dayData.weather[0].main;
-      return {
-        dateTitle: `${dayName}, ${dayDate}`,
-        description: `${Math.round(dayData.temp.max)}°/${Math.round(dayData.temp.min)}°F – ${description}`,
-        imgPath: getWeatherImage(description, weatherMain),
-        key: index
-      };
-    });
+  const processWeatherData = (data, startDate, endDate) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    // Set time to start of day for comparison
+    start.setHours(0, 0, 0, 0);
+    end.setHours(23, 59, 59, 999);
+    
+    return data.daily
+      .map((dayData, index) => {
+        const date = new Date(dayData.dt * 1000);
+        date.setHours(0, 0, 0, 0);
+        
+        const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+        const dayDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const description = dayData.weather[0].description;
+        const weatherMain = dayData.weather[0].main;
+        
+        return {
+          dateTitle: `${dayName}, ${dayDate}`,
+          description: `${Math.round(dayData.temp.max)}°/${Math.round(dayData.temp.min)}°F – ${description}`,
+          imgPath: getWeatherImage(description, weatherMain),
+          key: index,
+          date: date
+        };
+      })
+      .filter(day => day.date >= start && day.date <= end)
+       // Limit to max 7 days to avoid API limit exceeding
+      .slice(0, 7);
+  };
 
   const fetchWeatherData = async (latVal = currentLocation.lat, lonVal = currentLocation.lon) => {
     try {
@@ -125,7 +141,12 @@ function MainApp() {
       );
       if (!res.ok) throw new Error(`Failed: ${res.status}`);
       const json = await res.json();
-      setWeatherData(processWeatherData(json));
+      
+      // Use the selected date range
+      const startDate = dateRange[0].startDate;
+      const endDate = dateRange[0].endDate;
+      
+      setWeatherData(processWeatherData(json, startDate, endDate));
       setError(null);
     } catch (e) {
       setError(e.message);
@@ -134,21 +155,12 @@ function MainApp() {
     }
   };
 
-  // try user’s saved location first, else geolocate
+  // Refetch when date range changes
   useEffect(() => {
-    if (user?.lat && user?.lon && user?.location) {
-      setCurrentLocation({ lat: user.lat, lon: user.lon, name: user.location });
-      fetchWeatherData(user.lat, user.lon);
-    } else {
-      navigator.geolocation?.getCurrentPosition(
-        ({ coords }) => {
-          setCurrentLocation({ lat: coords.latitude, lon: coords.longitude, name: 'Your Location' });
-          fetchWeatherData(coords.latitude, coords.longitude);
-        },
-        () => fetchWeatherData()
-      );
+    if (currentLocation.lat && currentLocation.lon) {
+      fetchWeatherData();
     }
-  }, []);
+  }, [dateRange]);
 
   const onSuggestionsFetchRequested = ({ value }) => fetchSuggestions(value, setSuggestions);
   const onSuggestionsClearRequested = () => setSuggestions([]);
