@@ -252,9 +252,9 @@ function MainApp() {
           {error && <small className="text-danger d-block">Using fallback data</small>}
         </h1>
 
-        <Row>
+        <Row className='gx-0 gy-3'>
           {displayData.map(day => (
-            <Col key={day.key} xs={12} md={6} lg={4} className="mb-3">
+            <Col key={day.key} xs={12} md={6} lg={4} className="gx-1 mb-2">
               <DayCards
                 title={day.dateTitle}
                 description={day.description}

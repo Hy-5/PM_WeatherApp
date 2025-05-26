@@ -127,11 +127,12 @@ button:focus-visible {
 }
 
 .dayCard-view {
-  box-shadow: 0 4px 5px 3px rgba(228, 87, 117, 0.437) !important;
-  border: 1.5px solid rgba(228, 87, 117, 0.337) !important;
+  box-shadow: 0 4px 5px 3px rgb(25, 89, 153) !important;
+  border: 1.5px solid rgba(215, 210, 240, 1) !important;
   color: rgb(0, 0, 0) !important;
-  scale: 0.75 !important;
   background-color: transparent !important;
+  width: 75%;
+  margin: 0 auto;
   opacity: 0.9 !important;
   transition: all 0.4s ease 0s !important;
   height: 100% !important;
