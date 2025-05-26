@@ -83,16 +83,13 @@ function MainApp() {
   // Handle date selection: only mirror end when user explicitly selects end
   const handleDateChange = ({ selection }) => {
     let { startDate: newStart, endDate: newEnd } = selection;
-    // if only click (start == end), keep previous end
-    if (newEnd.getTime() === newStart.getTime()) {
+    if (newStart.getTime() === newEnd.getTime()) {
       newEnd = dateRange[0].endDate;
     }
-    // ensure startDate <= endDate
-    if (newStart > newEnd) {
+    if (newEnd < newStart) {
       [newStart, newEnd] = [newEnd, newStart];
     }
     setDateRange([{ startDate: newStart, endDate: newEnd, key: 'selection' }]);
-    setShowCalendar(false);
   };
 
   const getWeatherImage = (description, weatherMain) => {
@@ -203,7 +200,7 @@ function MainApp() {
           getSuggestionValue={getSuggestionValue}
           renderSuggestion={renderSuggestion}
           inputProps={{
-            placeholder: 'Enter location…',
+            placeholder: 'Enter city name…',
             value: search,
             onChange,
             className: 'form-control mb-3'
