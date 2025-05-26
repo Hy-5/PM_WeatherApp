@@ -45,8 +45,6 @@ Built with **React + Vite** and wrapped in **Electron**, it runs as a native Win
 - [ ] Performance improvements
 - [ ] Serverless web-version deployment
 
-_Your feature ideas are welcome—open an issue or start a discussion._
-
 ---
 
 ## 📜 License
