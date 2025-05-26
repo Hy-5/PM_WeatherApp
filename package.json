@@ -1,7 +1,7 @@
 {
   "name": "pmweather",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A Windows desktop weather app built with React+Vite and Electron.",
   "author": "Ismael Coulibaly - Hy-5",
   "main": "src/deskApp.cjs",
