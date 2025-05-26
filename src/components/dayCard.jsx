@@ -5,7 +5,7 @@ import '../style.css';
 // weather card component | make it smaller / prettier
 function dayCards(props) {
   return (
-    <Card className="dayCard-view">
+    <Card className="dayCard dayCard-view">
       <Card.Img variant="top"
         src={props.imgPath}
         alt="card-img"
@@ -16,7 +16,7 @@ function dayCards(props) {
         <Card.Text style={{ textAlign: "center" }}>
           {props.date}
         </Card.Text>
-        <Card.Text style={{ textAlign: "justify" }}>
+        <Card.Text style={{ textAlign: "center" }}>
           {props.description}
         </Card.Text>
       </Card.Body>

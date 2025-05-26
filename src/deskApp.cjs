@@ -5,8 +5,8 @@ const { registerUser, loginUser, updateUser } = require('./db/sqlite.js');
 
 function createWindow() {
   const win = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 900,
+    height: 1000,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
