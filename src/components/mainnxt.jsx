@@ -220,7 +220,7 @@ function MainApp() {
         />
 
         {/* Date range picker trigger */}
-        <Form.Group className="mb-3 d-flex gap-3">
+        <Form.Group className="mb-3 d-flex gap-3 date-indicator">
           <Form.Label className="mb-0"><strong>Start Date:</strong></Form.Label>
           <Form.Control
             readOnly

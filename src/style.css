@@ -154,3 +154,8 @@ button:focus-visible {
   pointer-events: auto !important;
   z-index: 1000;
 }
+
+.date-indicator {
+  font-weight: light !important;
+  align-items: center !important;
+}
