@@ -5,16 +5,19 @@ It has robust location detection using openweather geocoding API ensuring only v
 It's serverless and stores user data locally using SQLite.</br>
 Built with **React + Vite** and wrapped in **Electron**, it runs as a native Windows app without installation required (portable).
 
-<div style="display: flex; justify-content: space-between; align-items: center;">
-    <div style="width: 48%;">
-        <img src="src/assets/1lgP.webp" alt="Log in Page" style="width: 100%;">
-        <p style="text-align: center;">Log in Page</p>
-    </div>
-    <div style="width: 48%;">
-        <img src="src/assets/2homP.webp" alt="Home" style="width: 100%;">
-        <p style="text-align: center;">Home</p>
-    </div>
-</div>
+<table>
+  <tr>
+    <td align="center">
+      <img src="src/assets/1lgP.webp" width="400"/><br>
+      <strong>Log in Page</strong>
+    </td>
+    <td align="center">
+      <img src="src/assets/2homP.webp" width="400"/><br>
+      <strong>Home</strong>
+    </td>
+  </tr>
+</table>
+
 
 ---
 
